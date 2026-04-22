@@ -1,0 +1,9 @@
+{
+  "name": "Cafe Stock Alert",
+  "short_name": "CafeStock",
+  "description": "Premium Inventory Management for Smart Cafes",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f5f5f4",
+  "theme_color": "#1c1917"
+}

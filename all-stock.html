@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>สต๊อกแยกตามล็อต | Cafe Stock</title>
+    <link rel="stylesheet" href="./tailwind.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#1c1917">
+
+        <style>
+        body { font-family: 'Prompt', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f1f5f9; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 4px; }
+
+        .wh-header {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .wh-title-row { display: flex; align-items: center; justify-content: space-between; }
+        .wh-back-btn {
+            width: 40px; height: 40px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            transition: all 0.2s;
+        }
+        .wh-back-btn:hover { background: #f1f5f9; }
+        .wh-title { font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; }
+        .wh-subtitle { font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 1.5px; text-transform: uppercase; }
+        .wh-controls { display: flex; align-items: center; gap: 8px; }
+        .wh-btn {
+            width: 40px; height: 40px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            transition: all 0.15s;
+            color: #64748b;
+        }
+        .wh-btn:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .wh-btn:active { transform: scale(0.93); }
+        #zoomControls { display: none; align-items: center; gap: 6px; }
+        #zoomControls.visible { display: flex; }
+
+        /* Search */
+        .wh-search-wrap { position: relative; }
+        .wh-search-wrap .icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; transition: color 0.2s; }
+        .wh-search-wrap:focus-within .icon { color: #6366f1; }
+        .wh-search {
+            width: 100%; box-sizing: border-box;
+            padding: 14px 48px 14px 48px;
+            background: #fff;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+            font-size: 14px; font-family: 'Prompt', sans-serif;
+            color: #1e293b;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .wh-search:focus { border-color: #e0e7ff; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
+        .wh-search::placeholder { color: #cbd5e1; }
+        .wh-clear-btn { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #cbd5e1; cursor: pointer; padding: 4px; }
+
+        /* Summary Grid */
+        .wh-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        .wh-stat {
+            border-radius: 16px;
+            padding: 10px 8px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            border: 1px solid;
+        }
+        .wh-stat-label { font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .wh-stat-value { font-size: 18px; font-weight: 900; line-height: 1; }
+        .stat-blue { background: #eff6ff; border-color: #bfdbfe; }
+        .stat-blue .wh-stat-label { color: #3b82f6; }
+        .stat-blue .wh-stat-value { color: #1d4ed8; }
+        .stat-amber { background: #fffbeb; border-color: #fde68a; }
+        .stat-amber .wh-stat-label { color: #d97706; }
+        .stat-amber .wh-stat-value { color: #b45309; }
+        .stat-green { background: #f0fdf4; border-color: #bbf7d0; }
+        .stat-green .wh-stat-label { color: #16a34a; }
+        .stat-green .wh-stat-value { color: #15803d; }
+        .stat-red { background: #fff1f2; border-color: #fecdd3; }
+        .stat-red .wh-stat-label { color: #e11d48; }
+        .stat-red .wh-stat-value { color: #be123c; }
+        .stat-purple { background: #f5f3ff; border-color: #ddd6fe; }
+        .stat-purple .wh-stat-label { color: #7c3aed; }
+        .stat-purple .wh-stat-value { color: #6d28d9; }
+
+        /* Filter pills */
+        .wh-filters { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+        .wh-filters::-webkit-scrollbar { display: none; }
+        .wh-filter-btn {
+            padding: 7px 16px;
+            border-radius: 12px;
+            font-size: 11px; font-weight: 900; font-family: 'Prompt', sans-serif;
+            white-space: nowrap; flex-shrink: 0;
+            cursor: pointer; transition: all 0.15s;
+            border: 1px solid #e2e8f0;
+            background: #fff; color: #64748b;
+        }
+        .wh-filter-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; box-shadow: 0 2px 8px rgba(15,23,42,0.25); }
+        .wh-filter-btn:active { transform: scale(0.95); }
+    </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyDbnM6XVkAIj1a1cSuo2qgAJLb4euVLsWg",
+          authDomain: "cafe-stock-alert.firebaseapp.com",
+          projectId: "cafe-stock-alert",
+          storageBucket: "cafe-stock-alert.firebasestorage.app",
+          messagingSenderId: "320377962389",
+          appId: "1:320377962389:web:e71edf9bc87df8028ec09c",
+          measurementId: "G-S9EK0THP2J"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+<body class="warehouse-bg text-stone-800 font-sans h-screen flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] overflow-hidden">
+    <!-- Quick Status Bar (Phase 5) -->
+    <div id="quickStatusBar" class="sticky top-0 z-[100] bg-white/80 backdrop-blur-md border-b border-stone-200 hidden">
+        <div class="h-1 w-full bg-stone-100 overflow-hidden">
+            <div id="statusProgress" class="h-full bg-emerald-500 transition-all duration-1000" style="width: 100%"></div>
+        </div>
+        <div class="flex justify-between items-center px-4 py-1.5">
+            <span id="statusLabel" class="text-[9px] font-black uppercase text-stone-400">สถานะสต๊อกปกติ 🟢</span>
+            <span id="statusPercent" class="text-[9px] font-black text-stone-600">100%</span>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="wh-header">
+        <!-- Title Row -->
+        <div class="wh-title-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <a href="index.html" class="wh-back-btn">
+                    <i data-lucide="chevron-left" style="width:20px;height:20px;color:#475569;"></i>
+                </a>
+                <div>
+                    <div class="wh-title">สต็อกภาพรวม</div>
+                    <div class="wh-subtitle">Global Warehouse Inventory</div>
+                </div>
+            </div>
+            <div class="wh-controls">
+                <button onclick="App.toggleViewMode()" id="btnViewMode" class="wh-btn" title="สลับมุมมอง">
+                    <i data-lucide="layout-grid" style="width:18px;height:18px;"></i>
+                </button>
+                <div id="zoomControls">
+                    <button onclick="App.zoomGrid(-1)" class="wh-btn" title="ซูมออก">
+                        <i data-lucide="zoom-out" style="width:16px;height:16px;"></i>
+                    </button>
+                    <button onclick="App.zoomGrid(1)" class="wh-btn" title="ซูมเข้า">
+                        <i data-lucide="zoom-in" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="wh-search-wrap">
+            <span class="icon"><i data-lucide="search" style="width:18px;height:18px;"></i></span>
+            <input type="text" id="allStockSearchInput" oninput="App.onAllStockSearch(event)"
+                placeholder="ค้นหาสินค้า (ชื่อ, ยี่ห้อ)..." class="wh-search">
+            <button onclick="App.clearAllStockSearch()" class="wh-clear-btn">
+                <i data-lucide="x" style="width:16px;height:16px;"></i>
+            </button>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="wh-stats">
+            <div class="wh-stat stat-blue">
+                <span class="wh-stat-label">กลุ่มสินค้า</span>
+                <span class="wh-stat-value" id="grandGroups">0</span>
+            </div>
+            <div class="wh-stat stat-amber">
+                <span class="wh-stat-label">ชิ้นรวม</span>
+                <span class="wh-stat-value" id="grandUnits">0</span>
+            </div>
+            <div class="wh-stat stat-green">
+                <span class="wh-stat-label">เปิดแล้ว</span>
+                <span class="wh-stat-value" id="grandOpened">0</span>
+            </div>
+            <div class="wh-stat stat-red">
+                <span class="wh-stat-label">สต็อกต่ำ</span>
+                <span class="wh-stat-value" id="grandLowStock">0</span>
+            </div>
+            <div class="wh-stat stat-purple">
+                <span class="wh-stat-label">ล็อตรวม</span>
+                <span class="wh-stat-value" id="grandLots">0</span>
+            </div>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="wh-filters" id="allStockFilterContainer">
+            <button onclick="App.setAllStockFilter('all')" id="ast-all" class="wh-filter-btn active flt-btn">ทั้งหมด</button>
+            <button onclick="App.setAllStockFilter('นม/ของเหลว')" id="ast-นม" class="wh-filter-btn flt-btn">🥛 นม/ของเหลว</button>
+            <button onclick="App.setAllStockFilter('กาแฟ/ชา')" id="ast-กาแฟ" class="wh-filter-btn flt-btn">☕ กาแฟ/ชา</button>
+            <button onclick="App.setAllStockFilter('ไซรัป')" id="ast-ไซรัป" class="wh-filter-btn flt-btn">🍯 ไซรัป</button>
+            <button onclick="App.setAllStockFilter('เบเกอรี่')" id="ast-เบเกอรี่" class="wh-filter-btn flt-btn">🥐 เบเกอรี่</button>
+            <button onclick="App.setAllStockFilter('อื่นๆ')" id="ast-อื่นๆ" class="wh-filter-btn flt-btn">📦 อื่นๆ</button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto p-4 pb-24 relative z-10 space-y-5" id="allStockContainer">
+        <!-- Rendered by JS -->
+        <div class="text-center py-20"><div class="animate-spin w-8 h-8 border-4 border-[#FF6B6B] border-t-transparent rounded-full mx-auto"></div></div>
+    </div>
+    <!-- Toast Notification -->
+    <div id="toastMsg" onclick="if(window.location.pathname.endsWith('index.html') || window.location.pathname === '/') App.toggleNotificationPanel()" class="cursor-pointer fixed top-16 left-1/2 -translate-x-1/2 bg-stone-800 text-white px-5 py-3 rounded-2xl shadow-2xl z-[200] transition-all duration-500 opacity-0 pointer-events-none flex items-center gap-3 transform -translate-y-10 w-[90%] max-w-sm text-sm font-medium hover:scale-105 active:scale-95">
+        <i data-lucide="bell" id="toastIcon" class="w-6 h-6 text-amber-400 shrink-0"></i>
+        <div class="flex flex-col">
+            <span id="toastTitle" class="font-bold text-[10px] text-stone-300 uppercase tracking-wider mb-0.5 hidden">การแจ้งเตือน</span>
+            <span id="toastText" class="leading-tight">ข้อความ</span>
+        </div>
+    </div>
+    
+    <!-- Modals area -->
+    <div id="wasteModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 pb-safe"></div>
+
+    <!-- Delete Confirm Modal (With Reason) -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-stone-900/60 z-[150] hidden flex-col items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div class="bg-red-500 p-4 text-white flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                <h3 class="font-bold text-lg">จัดการสินค้านี้</h3>
+            </div>
+            <div class="p-5 text-stone-600 text-center">
+                <p class="font-medium text-lg text-stone-800 mb-1" id="delItemName">ชื่อสินค้า</p>
+                <p class="text-sm">คุณตั้งใจนำสินค้านี้ออกจากระบบด้วยเหตุผลใด?</p>
+            </div>
+            <div class="p-4 bg-stone-50 border-t border-stone-100 flex flex-col gap-2.5">
+                <button onclick="App.confirmDelete('used')" class="w-full bg-emerald-500 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 active:scale-[0.98] transition-all flex justify-center items-center gap-2 shadow-sm"><i data-lucide="check-circle" class="w-5 h-5"></i> ใช้หมดแล้ว (คุ้มค่า)</button>
+                <button onclick="App.confirmDelete('wasted')" class="w-full bg-red-500 text-white font-bold py-3.5 rounded-xl hover:bg-red-600 active:scale-[0.98] transition-all flex justify-center items-center gap-2 shadow-sm"><i data-lucide="trash-2" class="w-5 h-5"></i> ต้องทิ้ง / หมดอายุ (สูญเสีย)</button>
+                <button onclick="App.cancelDelete()" class="w-full mt-2 text-stone-500 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-all">ยกเลิก กลับไปก่อน</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>lucide.createIcons();</script>
+    <script src="./app.js?v=1000"></script>
+</body>
+</html>

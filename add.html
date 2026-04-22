@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เพิ่มรายการใหม่ - Cafe Stock</title>
+    <link rel="stylesheet" href="./tailwind.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#1c1917">
+
+        <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyDbnM6XVkAIj1a1cSuo2qgAJLb4euVLsWg",
+          authDomain: "cafe-stock-alert.firebaseapp.com",
+          projectId: "cafe-stock-alert",
+          storageBucket: "cafe-stock-alert.firebasestorage.app",
+          messagingSenderId: "320377962389",
+          appId: "1:320377962389:web:e71edf9bc87df8028ec09c",
+          measurementId: "G-S9EK0THP2J"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-stone-800 bg-stone-50">
+    <div id="toastMsg" class="fixed top-16 left-1/2 -translate-x-1/2 bg-stone-800 text-white px-5 py-3 rounded-2xl shadow-2xl z-[200] transition-all duration-500 opacity-0 pointer-events-none flex items-center gap-3 transform -translate-y-10 w-[90%] max-w-sm text-sm font-medium">
+        <i data-lucide="bell" id="toastIcon" class="w-6 h-6 text-amber-400 shrink-0"></i>
+        <div class="flex flex-col">
+            <span id="toastTitle" class="font-bold text-[10px] text-stone-300 uppercase tracking-wider mb-0.5 hidden">การแจ้งเตือน</span>
+            <span id="toastText" class="leading-tight">ข้อความ</span>
+        </div>
+    </div>
+
+    <!-- Camera Overlay -->
+    <div id="cameraOverlay" class="fixed inset-0 bg-stone-950 z-[150] hidden flex flex-col">
+        <div class="p-4 flex justify-between items-center text-white bg-black/50 absolute top-0 left-0 right-0 z-10">
+            <h2 class="font-bold flex items-center gap-2"><i data-lucide="camera" class="w-5 h-5 text-amber-400"></i> สแกนฉลากสินค้า</h2>
+            <button type="button" onclick="App.closeCamera()" class="p-2 bg-stone-800 rounded-full hover:bg-stone-700 transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="flex-1 relative bg-black overflow-hidden flex items-center justify-center">
+            <video id="cameraVideo" autoplay playsinline class="w-full h-full object-contain"></video>
+            <!-- Guide overlay -->
+            <div class="absolute inset-0 border-[40px] border-black/50 pointer-events-none flex items-center justify-center">
+                <div class="w-full h-full border-2 border-amber-400/80 border-dashed rounded-xl flex items-center justify-center relative shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+                    <span class="text-white text-xs bg-black/60 px-4 py-1.5 rounded-full absolute -bottom-10 shadow-md backdrop-blur-sm">จัดฉลากหรือวันที่ให้อยู่ในกรอบ</span>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 bg-black flex justify-center items-center pb-10 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] z-10 relative">
+            <button type="button" onclick="App.capturePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-stone-300 flex items-center justify-center active:scale-95 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                <div class="w-[60px] h-[60px] bg-white rounded-full border border-stone-200 shadow-inner"></div>
+            </button>
+        </div>
+        <canvas id="cameraCanvas" class="hidden"></canvas>
+    </div>
+
+    <!-- Premium AI Scan Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-stone-950/80 z-[300] hidden flex flex-col items-center justify-center text-white backdrop-blur-xl transition-all duration-500">
+        <div class="relative flex flex-col items-center">
+            <!-- Scanning Container -->
+            <div class="relative w-48 h-48 mb-10 glass-card rounded-[2.5rem] overflow-hidden flex items-center justify-center shadow-2xl border-white/20">
+                <!-- Brain/AI Icon with Pulse -->
+                <div class="brain-pulse">
+                    <i data-lucide="brain-circuit" class="w-24 h-24 text-amber-500/80"></i>
+                </div>
+                
+                <!-- Moving Laser Scan Line -->
+                <div class="scan-line-anim"></div>
+                
+                <!-- Corner Accents -->
+                <div class="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-amber-500/50 rounded-tl-lg"></div>
+                <div class="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-amber-500/50 rounded-tr-lg"></div>
+                <div class="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-amber-500/50 rounded-bl-lg"></div>
+                <div class="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-amber-500/50 rounded-br-lg"></div>
+            </div>
+
+            <!-- Text Content -->
+            <div class="text-center space-y-2">
+                <div class="flex items-center justify-center gap-3 mb-2">
+                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                    <h3 class="font-black text-2xl tracking-tight text-white">Gemini AI Vision</h3>
+                </div>
+                <p class="text-stone-400 font-medium tracking-wide min-h-[3rem] px-8" id="ocrProgress">กำลังด่วน! แกะข้อความ...</p>
+            </div>
+            
+            <!-- Gemini Sparkle Branding -->
+            <div class="mt-12 flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+                <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400"></i>
+                <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">Powered by Gemini 3 Flash</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="bg-white px-4 py-4 shadow-sm z-10 flex items-center shrink-0 border-b border-amber-500 border-b-4">
+        <a href="index.html" class="p-2 -ml-2 mr-2 text-stone-500 hover:bg-stone-100 rounded-full transition"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+        <h1 class="text-lg font-bold text-stone-800 flex items-center gap-2">
+            <i data-lucide="calendar-check" class="text-amber-500 w-5 h-5"></i>
+            เพิ่มรายการใหม่
+        </h1>
+    </div>
+
+    <!-- Form Container -->
+    <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center">
+        <div class="w-full max-w-lg bg-white rounded-3xl p-6 shadow-sm border border-stone-100 mt-2">
+            <form id="addForm" onsubmit="App.handleNormalAdd(event)" class="space-y-5">
+                <div>
+                    <label class="text-xs text-stone-500 font-bold">ชื่อสินค้า / วัตถุดิบ</label>
+                    <input type="text" id="n_itemName" required placeholder="ระบุชื่อวัตถุดิบ" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-amber-500 font-medium text-stone-800 transition">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-stone-500 font-bold">หมวดหมู่</label>
+                        <select id="n_itemCategory" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-amber-500 font-medium text-stone-800 transition">
+                            <option value="นม/ของเหลว">นม/ของเหลว</option>
+                            <option value="กาแฟ/ชา">กาแฟ/ชา</option>
+                            <option value="ไซรัป">ไซรัป</option>
+                            <option value="เบเกอรี่">เบเกอรี่</option>
+                            <option value="อื่นๆ" selected>อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-stone-500 font-bold">จำนวนสต๊อก (แพ็ก/ชิ้น)</label>
+                        <div class="flex items-center mt-1 bg-stone-50 border border-stone-200 rounded-xl overflow-hidden">
+                            <button type="button" onclick="document.getElementById('n_itemQty').stepDown()" class="px-3 py-3 text-stone-500 hover:bg-stone-200 active:bg-stone-300 transition shrink-0"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                            <input type="number" id="n_itemQty" value="1" min="1" class="w-full text-center bg-transparent py-3 outline-none font-bold text-stone-800">
+                            <button type="button" onclick="document.getElementById('n_itemQty').stepUp()" class="px-3 py-3 text-stone-500 hover:bg-stone-200 active:bg-stone-300 transition shrink-0"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-stone-500 font-bold flex items-center justify-between">
+                            <span>ชิ้นต่อแพ็ก (ตัวคูณ)</span>
+                            <span class="text-[9px] bg-stone-100 px-1.5 py-0.5 rounded text-stone-400">ถ้าเป็นชิ้นใส่ 1</span>
+                        </label>
+                        <input type="number" id="n_itemMultiplier" value="1" min="1" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-amber-500 font-bold text-stone-800 transition text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs text-stone-500 font-bold flex items-center gap-1">
+                            วันที่และเวลาหมดอายุ (EXP)
+                        </label>
+                        <input type="datetime-local" id="n_expiryDate" required class="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-amber-500 font-bold text-amber-700 transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] text-stone-500 font-bold flex items-center gap-1">ราคาซื้อ (ต่อหน่วย)</label>
+                        <input type="number" id="n_itemPrice" value="0" min="0" step="0.01" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-amber-500 font-bold text-emerald-600 transition text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-stone-500 font-bold flex items-center gap-1">แจ้งเตือนขั้นต่ำ</label>
+                        <input type="number" id="n_minQty" value="0" min="0" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-amber-500 font-medium text-stone-800 transition text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="text-[10px] text-stone-500 font-bold flex items-center gap-1">วัน/เวลา ผลิต (ถ้ามี)</label>
+                        <input type="date" id="n_itemProdDate" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mt-1 outline-none focus:border-amber-500 font-medium text-stone-800 transition text-sm">
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-center mt-2 bg-stone-50 border border-stone-200 rounded-xl">
+                    <label class="flex items-center gap-2 cursor-pointer w-full h-full px-4 py-3">
+                        <input type="checkbox" id="n_isOpened" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                        <span class="text-xs text-stone-600 font-bold">เปิดใช้งานทันที 1 ชิ้น</span>
+                    </label>
+                </div>
+                
+                <div class="pt-2 gap-3 flex flex-col">
+                    <button type="submit" class="w-full bg-stone-800 text-white font-bold py-4 rounded-2xl hover:bg-stone-900 shadow-lg flex justify-center items-center gap-2 transition active:scale-95 mb-2">
+                        <i data-lucide="save" class="w-5 h-5"></i> บันทึกเข้าระบบ
+                    </button>
+                    
+                    <div class="relative flex items-center py-2">
+                        <div class="flex-grow border-t border-stone-200"></div>
+                        <span class="flex-shrink-0 mx-4 text-stone-400 text-xs font-medium">ความรวดเร็วระดับ AI</span>
+                        <div class="flex-grow border-t border-stone-200"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" onclick="document.getElementById('receiptInput').click()" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 shadow-md flex justify-center items-center gap-2 transition active:scale-95 text-xs">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> สแกนบิล/ใบเสร็จ
+                        </button>
+                        <input type="file" id="receiptInput" accept="image/*" class="hidden" onchange="App.handleReceiptScan(this)">
+
+                        <button type="button" onclick="App.openCamera()" class="w-full bg-amber-500 text-white font-bold py-3.5 rounded-xl hover:bg-amber-600 shadow-md flex justify-center items-center gap-2 transition active:scale-95 text-xs">
+                            <i data-lucide="camera" class="w-4 h-4"></i> สแกนฉลาก (ชิ้นเดียว)
+                        </button>
+                    </div>
+                    
+                    <button type="button" onclick="document.getElementById('ocrInput').click()" class="w-full mt-1 bg-stone-100 text-stone-600 font-bold py-3 rounded-xl hover:bg-stone-200 shadow-sm flex justify-center items-center gap-2 transition active:scale-95 text-xs">
+                        <i data-lucide="image" class="w-4 h-4"></i> อัปโหลดจากแกลเลอรี
+                    </button>
+                    <input type="file" id="ocrInput" accept="image/*" class="hidden" onchange="App.handleGeminiScan(this)">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Receipt Batch Review Modal (Unified Design) -->
+    <div id="receiptReviewModal" class="fixed inset-0 z-[250] hidden flex flex-col items-center justify-end sm:justify-center p-0 sm:p-4 bg-stone-900/60 backdrop-blur-sm overflow-hidden">
+        <div class="bg-white w-full max-w-2xl h-[90vh] sm:h-auto sm:max-h-[85vh] rounded-t-[2.5rem] sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden slide-up">
+            <!-- Modal Header -->
+            <div class="pt-8 px-8 pb-4 border-b border-stone-100 flex justify-between items-center bg-white/80 backdrop-blur sticky top-0 z-10">
+                <div>
+                    <h3 class="font-black text-2xl text-stone-800 flex items-center gap-3">
+                        <span class="p-2 bg-indigo-100 text-indigo-600 rounded-2xl">
+                            <i data-lucide="file-check-2" class="w-6 h-6"></i>
+                        </span>
+                        ยืนยันข้อมูล AI
+                    </h3>
+                    <p class="text-stone-400 text-xs font-medium ml-12 mt-1" id="receiptCountText">พบทั้งหมด 0 รายการ</p>
+                </div>
+                <button type="button" onclick="App.closeReceiptReview()" class="p-3 bg-stone-50 hover:bg-stone-100 rounded-2xl transition-all">
+                    <i data-lucide="x" class="w-6 h-6 text-stone-400"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable List) -->
+            <div id="itemsReviewList" class="flex-1 overflow-y-auto p-6 space-y-4 bg-stone-50/50">
+                <!-- Receipt items will be rendered here as editable cards -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-6 bg-white border-t border-stone-100 flex flex-col gap-3">
+                <button type="button" onclick="App.saveAllReceiptItems()" id="btnSaveBatch" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    บันทึกทั้งหมดลงสต็อก
+                </button>
+                <button type="button" onclick="App.closeReceiptReview()" class="w-full py-3 text-stone-400 font-bold text-sm hover:text-stone-600 transition">
+                    ยกเลิกและทิ้งข้อมูล
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // #region agent log
+        fetch('http://127.0.0.1:7752/ingest/a1d91d84-c820-4342-a6a3-afa592b75903',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'75c846'},body:JSON.stringify({sessionId:'75c846',runId:'pre-fix',hypothesisId:'H9',location:'add.html:pre-app',message:'html pre-app ping',data:{href:location.href,protocol:location.protocol},timestamp:Date.now()})}).catch(()=>{});
+        fetch('/__dbg_ping?sid=75c846&h=H10&t=' + Date.now()).catch(()=>{});
+        // #endregion
+    </script>
+    <script src="./app.js?v=1000"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
